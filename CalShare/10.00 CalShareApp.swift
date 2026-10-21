@@ -9,9 +9,6 @@ import SwiftUI
 @main
 struct CalShareApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @AppStorage(Preferences.Key.showMenuBarItem) private var showMenuBarItem = true
-    @AppStorage(Preferences.Key.closeToMenuBar) private var closeToMenuBar = false
-    @AppStorage(Preferences.Key.launchTo) private var launchTo = Preferences.LaunchTo.dashboard.rawValue
 
     var body: some Scene {
         // `Window` rather than `WindowGroup`: CalShare has exactly one dashboard window.
@@ -69,17 +66,6 @@ struct CalShareApp: App {
             EmptyCommandGroup(.help)
         }
 
-        // Closing or launching to the menu bar needs the menu bar item, so it's shown
-        // whatever the checkbox says, which is left as it was for when both are off.
-        MenuBarExtra(isInserted: Binding(get: { showMenuBarItem || closeToMenuBar
-                                                || launchTo == Preferences.LaunchTo.menuBar.rawValue },
-                                         set: { showMenuBarItem = $0 })) {
-            MenuBarContent()
-                .environment(appDelegate.model)
-        } label: {
-            MenuBarLabel()
-                .environment(appDelegate.model)
-        }
     }
 }
 
@@ -133,6 +119,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, Loggable {
     static let logTag = "[App]"
 
     let model: AppModel
+    private lazy var menuBarItem = MenuBarItem(model: model)
 
     override init() {
         Preferences.registerDefaults()
@@ -162,6 +149,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, Loggable {
         HelpMenuRemover.install()
         model.start()
         DockPresence.install()
+        menuBarItem.install()
         // Make every launch what Settings asks for. AppKit opens no window for a launch at
         // login, though macOS may still restore the window if it was open at log out.
         switch Preferences.launchTo {
@@ -185,6 +173,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, Loggable {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        menuBarItem.prepareForTermination()
         model.stop()
         Logger.shutdownLoggingBlocking()
     }
