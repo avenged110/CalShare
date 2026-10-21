@@ -7,6 +7,7 @@
 // Each device step watches the server for that device's first sync and says so, so the
 // user never has to guess whether it worked. Every step is laid out by SetupPage.
 
+import AppKit
 import CalShareCore
 import SwiftUI
 
@@ -207,7 +208,9 @@ struct SetupAssistant: View {
                 if step == .welcome && model.snapshot.configuration.setupCompleted {
                     GutterButton("Close") { dismiss() }
                         .keyboardShortcut(.cancelAction)
-                } else if step != .welcome {
+                } else if step == .welcome {
+                    GutterButton("Exit and Quit") { confirmQuit() }
+                } else {
                     GutterButton("Back") { step = Step(rawValue: step.rawValue - 1) ?? .welcome }
                         .disabled(working)
                 }
@@ -279,6 +282,26 @@ struct SetupAssistant: View {
         default:
             advance()
         }
+    }
+
+    /// Quits from first-time setup. Setup isn't marked complete, so the assistant opens
+    /// again on the next launch.
+    private func confirmQuit() {
+        model.present(.confirm(
+            "Quit Setup?",
+            "This will quit CalShare. The setup assistant will open again on the next launch and you will need to complete the setup process before you can use the application.",
+            action: "Quit"
+        ) {
+            // AppKit silently refuses to terminate while a sheet is attached, so the sheet
+            // is detached first, in the same turn, and the app quits before anything redraws.
+            // Innermost first: the alert's own sheet may still be attached to the assistant's.
+            while let parent = NSApp.windows.first(where: { $0.attachedSheet != nil && $0.attachedSheet?.attachedSheet == nil }),
+                  let sheet = parent.attachedSheet {
+                parent.endSheet(sheet)
+            }
+            model.showSetupAssistant = false
+            NSApp.terminate(nil)
+        })
     }
 
     private func advance() {
