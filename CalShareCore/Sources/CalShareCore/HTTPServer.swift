@@ -117,8 +117,9 @@ public final class HTTPServer: @unchecked Sendable, Loggable {
 
     private static func tcpOptions() -> NWProtocolTCP.Options {
         let tcp = NWProtocolTCP.Options()
-        tcp.enableKeepalive = true
-        tcp.keepaliveIdle = 60
+        // No TCP keepalive: an idle connection is closed by the idle timer anyway, and
+        // a probe to a sleeping iPhone or iPad wakes its Wi-Fi radio just to answer it.
+        tcp.enableKeepalive = false
         tcp.noDelay = true
         return tcp
     }

@@ -624,7 +624,12 @@ public final class Supervisor: @unchecked Sendable, Loggable {
             else if let current = serverCertificate {
                 if current.notAfter < Date().addingTimeInterval(30 * 86_400) { reason = "it expires soon" }
                 else if Set(current.names) != Set(names) { reason = "this Mac's names changed" }
-                else if !Set(addresses).isSubset(of: Set(current.addresses)) { reason = "this Mac's network addresses changed" }
+                // Only IPv4 addresses are ever given to devices. IPv6 addresses (temporary ones
+                // especially) rotate on their own, and reissuing for them restarts the server
+                // and drops every device's connection for nothing.
+                else if !Set(addresses.filter { !$0.contains(":") }).isSubset(of: Set(current.addresses)) {
+                    reason = "this Mac's network addresses changed"
+                }
                 else if !CertificateBuilder.evaluate(current, authority: authority, hostname: names.first ?? "localhost") { reason = "it no longer validates" }
             } else {
                 reason = "none existed"
