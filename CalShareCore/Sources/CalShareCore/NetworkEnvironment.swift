@@ -134,6 +134,9 @@ public final class NetworkWatcher: @unchecked Sendable {
 
     /// Touched only on `queue`.
     private var references: [DNSServiceRef] = unsafe []
+    private struct Advertisement: Equatable { var name: String; var port: UInt16; var path: String }
+    /// What `references` advertises. Touched only on `queue`.
+    private var current: Advertisement?
     private let queue = DispatchQueue(label: "CalShare.Bonjour")
     private let queueKey = DispatchSpecificKey<Void>()
     public let status = Locked<(registered: Int, error: String?)>((0, nil))
@@ -149,7 +152,14 @@ public final class NetworkWatcher: @unchecked Sendable {
     }
 
     public func advertise(name: String, port: UInt16, path: String = "/dav/") {
+        // Re-registering sends goodbye, probe, and announcement packets to every device on
+        // the network, waking each one's Wi-Fi radio. mDNSResponder already follows
+        // interface and address changes for a live registration, so an unchanged one stays.
+        let wanted = Advertisement(name: name, port: port, path: path)
+        let unchanged = queue.sync { current == wanted && !unsafe references.isEmpty }
+        if unchanged, status.current.error == nil { return }
         stop()
+        queue.sync { current = wanted }
         let txt = Self.txtRecord(["path": path])
         let failures: [String] = queue.sync {
             var failures: [String] = []
@@ -177,7 +187,7 @@ public final class NetworkWatcher: @unchecked Sendable {
     }
 
     public func stop() {
-        queue.sync { deallocateAll() }
+        queue.sync { deallocateAll(); current = nil }
         status.withLock { $0 = (0, nil) }
     }
 
