@@ -32,7 +32,7 @@ Because CalShare can only serve content to clients while it's running, it is hig
 - "Local Network" permission via Apple's TCC system.
 - Sandboxed, uses Apple's Hardened Runtime, and is compliant with Swift 6 (Strict Concurrency and Strict Memory Safety); built against Xcode 26.3.
 - Clients must support TLS 1.3 to be able to authenticate with CalShare.
-- Clients sync while this Mac is awake and reachable on the local network (using the Mac's `.local` name); to sync away from home, add a remote hostname that reaches the Mac (for example a Tailscale name) in Settings.
+- Clients sync while the server (the host Mac) is awake and reachable on the local network (using the Mac's `.local` name); to sync away from home, add a remote hostname that reaches the host Mac (for example a Tailscale name) in Settings.
 - Accepts incoming connections on two ports (by default, 8443 for calendars and contacts over TLS and 8080 for setup links and discovery redirects only).
 
 ## Support
