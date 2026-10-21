@@ -156,7 +156,7 @@ public final class NetworkWatcher: @unchecked Sendable {
         // the network, waking each one's Wi-Fi radio. mDNSResponder already follows
         // interface and address changes for a live registration, so an unchanged one stays.
         let wanted = Advertisement(name: name, port: port, path: path)
-        let unchanged = queue.sync { current == wanted && !unsafe references.isEmpty }
+        let unchanged = queue.sync { unsafe current == wanted && !references.isEmpty }
         if unchanged, status.current.error == nil { return }
         stop()
         queue.sync { current = wanted }
